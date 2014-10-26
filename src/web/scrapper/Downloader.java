@@ -1,10 +1,12 @@
 package web.scrapper;
 
 import com.jaunt.*;
+import java.io.*;
 
 public class Downloader {
 
     private String baseUrl = "http://ikartinka.com";
+    public String categoriesFile = "categories.txt";
 
     private UserAgent userAgent;
 
@@ -22,18 +24,18 @@ public class Downloader {
         return userAgent.doc.findFirst("<ul class=box-category>").findEvery("<a>");
     }
 
-    public static void main(String[] args) {
-        System.out.println("iKartinka Web Scrapper");
-        Downloader downloader = new Downloader();
-        try {
-            Elements categories = downloader.findCategories();
-            for (Element elem : categories) {
-                System.out.println(elem);
-            }
+    public void refreshCategories() throws JauntException, IOException {
+        Elements categories = findCategories();
 
-        }
-        catch(JauntException e) {
-            System.err.println(e);
+        DataOutputStream outputStream = new DataOutputStream(
+                new FileOutputStream(categoriesFile));
+        outputStream.writeInt(categories.size());
+        int commandIndex = 2;
+        for (Element elem : categories) {
+            outputStream.writeInt(commandIndex);
+            outputStream.writeUTF(elem.getAttx("href"));
+            outputStream.writeUTF(elem.getText());
+            commandIndex++;
         }
     }
 }
