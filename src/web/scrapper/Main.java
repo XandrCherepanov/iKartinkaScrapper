@@ -5,48 +5,37 @@ import com.jaunt.Elements;
 import com.jaunt.JauntException;
 
 import java.io.*;
+import java.util.Map;
 import java.util.Scanner;
 
 public class Main {
-    public static void main(String[] args) {
-        System.out.println("iKartinka Web Scrapper");
+
+    private static void showMainMenu(Map<Integer, Category> categories) {
         System.out.println("Select option: ");
         System.out.println("1 - Refresh categories");
 
-        Downloader downloader = new Downloader();
+        for (Map.Entry<Integer, Category> entry : categories.entrySet()) {
+            System.out.println(entry.getKey() + " - " + entry.getValue().getName());
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println("Welcome to iKartinka Web Scrapper");
 
         try {
-            File f = new File(downloader.categoriesFile);
-            if (f.exists()) {
-                DataInputStream inputStream = new DataInputStream(
-                        new FileInputStream(f));
-                int count = inputStream.readInt();
-                for (int i = 0; i < count; i++) {
-                    int commandIndex = inputStream.readInt();
-                    String commandName = inputStream.readUTF();
-                    inputStream.readUTF();
-                    System.out.println(commandIndex + " - " + commandName);
+            Downloader downloader = new Downloader();
+            Scanner scanner = new Scanner(System.in);
+
+            int input = 1;
+            do {
+                showMainMenu(downloader.getCategories());
+                input = scanner.nextInt();
+                if (input == 1) {
+                    downloader.refreshCategories();
                 }
-            }
-        } catch (IOException e) {
-            System.err.println(e.getMessage());
-        }
+            } while (input == 1);
 
-
-        Scanner scanner = new Scanner(System.in);
-        int input = scanner.nextInt();
-
-        try {
-            if (input == 1) {
-                downloader.refreshCategories();
-            }
-//            Elements categories = downloader.findCategories();
-//            for (Element elem : categories) {
-//                System.out.println(elem);
-//            }
-
-        }
-        catch (JauntException|IOException e) {
+        } catch (IOException|ClassNotFoundException|JauntException e) {
             System.err.println(e.getMessage());
         }
     }
