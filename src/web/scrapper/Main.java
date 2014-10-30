@@ -1,7 +1,5 @@
 package web.scrapper;
 
-import com.jaunt.Element;
-import com.jaunt.Elements;
 import com.jaunt.JauntException;
 
 import java.io.*;
@@ -17,7 +15,14 @@ public class Main {
             System.out.println(entry.getKey() + " - " + entry.getValue().getName());
         }
         System.out.println("q - Quit");
-        System.out.println("Select option [q]: ");
+        System.out.print("Select option [q]: ");
+    }
+
+    private static void showSubmenu(Category category) {
+        if (category == null) {
+            return;
+        }
+        System.out.println("Download " + category.getName() + " category");
     }
 
     public static void main(String[] args) {
@@ -37,6 +42,9 @@ public class Main {
                 int command = Integer.parseInt(input);
                 if (command == 1) {
                     downloader.refreshCategories();
+                } else {
+                    Category category = downloader.getCategory(command);
+                    showSubmenu(category);
                 }
             } while (!input.equals("q"));
 

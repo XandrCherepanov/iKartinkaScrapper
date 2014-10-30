@@ -66,4 +66,8 @@ public class Downloader {
     public Map<Integer,Category> getCategories() {
         return categories;
     }
+
+    public Category getCategory(int index) {
+        return categories.get(index);
+    }
 }
