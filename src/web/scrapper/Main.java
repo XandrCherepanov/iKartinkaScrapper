@@ -34,7 +34,7 @@ public class Main {
 
             if (input.equals("Y")) {
                 System.out.println("Start downloading " + category.getName());
-                scanner.nextLine();
+                category.download();
             }
 
         } catch (ResponseException | NodeNotFound e) {
