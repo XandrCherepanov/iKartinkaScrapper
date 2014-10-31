@@ -20,19 +20,22 @@ public class Category implements Serializable {
     private int lastPage = 1;
     private final int perPage = 50;
     private UserAgent userAgent;
+    HandlerForBinary handlerForBinary = new HandlerForBinary();
 
     public Category(String name, String url, UserAgent userAgent) {
         this.name = name;
         this.url = url;
         this.userAgent = userAgent;
         loadStatus();
+        handlerForBinary = new HandlerForBinary();
+
     }
 
     public String getName() {
         return name;
     }
 
-    public int getAllCount() throws ResponseException, NodeNotFound {
+    public int getAllCount() throws ResponseException, NotFound {
         userAgent.visit(url);
         String results = userAgent.doc.findFirst("<div class=results>").getText();
 
@@ -58,44 +61,55 @@ public class Category implements Serializable {
         writeStatus();
 
         int countOfPages = (int) Math.ceil((double) allCount / perPage);
-//        System.out.println("Count of pages: " + countOfPages);
+
         if (allCount > downloaded) {
             try {
-                userAgent.visit(url + "?sort=p.date_added&order=ASC&limit=" + perPage + "&page=" + lastPage);
-                Elements pictures = userAgent.doc.findFirst("<ul class=normal>")
-                        .findEvery("<li>");
-                Element elemLi = pictures.getElement(0);
-//                String link = elemLi.findFirst("<a class=zoom>").getAt("href");
-                int imageId = Integer.parseInt(elemLi.findFirst("<div data-id>").getAt("data-id"));
+                while (lastPage <= countOfPages) {
+                    userAgent.visit(url + "?sort=p.date_added&order=ASC&limit=" + perPage + "&page=" + lastPage);
+                    Elements pictures = userAgent.doc.findFirst("<ul class=normal>")
+                            .findEvery("<li>");
+                    for (Element elem : pictures) {
+                        int imageId = Integer.parseInt(elem.findFirst("<div data-id>").getAt("data-id"));
+                        if (lastId < imageId) {
+                            downloadImage(imageId);
+                        }
+                    }
+                    lastPage++;
+                    writeStatus();
+                }
 
-//                System.out.println("Link: " + link);
-//                System.out.println("ID: " + imageId);
-                userAgent.visit("http://ikartinka.com/index.php?route=product/download/window&product_id=" +
-                        imageId + "&size=1920x1200");
-                String imageSrc = userAgent.doc.findFirst("<div id=image>")
-                        .getElement(0)
-                        .getAt("src");
-
-                HandlerForBinary handlerForBinary = new HandlerForBinary();
-                userAgent.setHandler("image/jpeg", handlerForBinary);
-                userAgent.visit(imageSrc);
-                DataOutputStream outputStream = new DataOutputStream(new FileOutputStream(
-                        new File(name + File.separator + name + "_" + imageId + ".jpg")));
-                byte[] image = handlerForBinary.getContent();
-                outputStream.write(image);
-                outputStream.close();
-
-                lastId = imageId;
-                downloaded++;
-                writeStatus();
-
-                System.out.println("Image " + imageId + " (" + image.length / 1024 + "Kb) downloaded");
-
-            } catch (ResponseException | NodeNotFound | IOException e) {
+            } catch (ResponseException | NotFound | IOException e) {
                 e.printStackTrace();
             }
         }
     }
+
+    private void downloadImage(int imageId)
+            throws ResponseException, NotFound, IOException {
+        userAgent.visit("http://ikartinka.com/index.php?route=product/download/window&product_id=" +
+                imageId + "&size=1920x1200");
+        String imageSrc = userAgent.doc.findFirst("<div id=image>")
+                .getElement(0)
+                .getAt("src");
+
+        File imageFile = new File(name + File.separator + name + "_" + imageId + ".jpg");
+        if (!imageFile.exists()) {
+            userAgent.setHandler("image/jpeg", handlerForBinary);
+            userAgent.visit(imageSrc);
+            DataOutputStream outputStream = new DataOutputStream(new FileOutputStream(
+                    imageFile));
+            byte[] image = handlerForBinary.getContent();
+            outputStream.write(image);
+            outputStream.close();
+
+            lastId = imageId;
+            downloaded++;
+            writeStatus();
+
+            System.out.println("Image " + imageId + " (" + image.length / 1024 + "Kb) downloaded");
+        }
+    }
+
 
     private void writeStatus() {
         File statusFile = new File(name + File.separator + "status.txt");

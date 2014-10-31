@@ -1,7 +1,7 @@
 package web.scrapper;
 
 import com.jaunt.JauntException;
-import com.jaunt.NodeNotFound;
+import com.jaunt.NotFound;
 import com.jaunt.ResponseException;
 
 import java.io.*;
@@ -38,7 +38,7 @@ public class Main {
                 category.download();
             }
 
-        } catch (ResponseException | NodeNotFound e) {
+        } catch (ResponseException | NotFound e) {
             e.printStackTrace();
         }
     }
