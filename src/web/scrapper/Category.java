@@ -18,13 +18,14 @@ public class Category implements Serializable {
     private int downloaded = 0;
     private int lastId = 0;
     private int lastPage = 1;
-    private final int perPage = 150;
+    private final int perPage = 50;
     private UserAgent userAgent;
 
     public Category(String name, String url, UserAgent userAgent) {
         this.name = name;
         this.url = url;
         this.userAgent = userAgent;
+        loadStatus();
     }
 
     public String getName() {
@@ -82,6 +83,11 @@ public class Category implements Serializable {
                         new File(name + File.separator + name + "_" + imageId + ".jpg")));
                 byte[] image = handlerForBinary.getContent();
                 outputStream.write(image);
+                outputStream.close();
+
+                lastId = imageId;
+                downloaded++;
+                writeStatus();
 
                 System.out.println("Image " + imageId + " (" + image.length / 1024 + "Kb) downloaded");
 
@@ -99,8 +105,30 @@ public class Category implements Serializable {
             outputStream.writeInt(downloaded);
             outputStream.writeInt(lastId);
             outputStream.writeInt(lastPage);
+            outputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void loadStatus() {
+        File statusFile = new File(name + File.separator + "status.txt");
+        try {
+            if (statusFile.exists()) {
+                DataInputStream inputStream = new DataInputStream(
+                        new FileInputStream(statusFile));
+                downloaded = inputStream.readInt();
+                lastId = inputStream.readInt();
+                lastPage = inputStream.readInt();
+                inputStream.close();
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public int getDownloadedCount() {
+        return downloaded;
     }
 }

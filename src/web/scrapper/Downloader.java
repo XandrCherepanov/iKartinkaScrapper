@@ -49,6 +49,7 @@ public class Downloader {
             outputStream.writeUTF(category.getName());
             outputStream.writeUTF(category.getUrl());
         }
+        outputStream.close();
     }
 
     private void loadCategoriesList() throws IOException, ClassNotFoundException {
@@ -63,6 +64,7 @@ public class Downloader {
                 Category category = new Category(inputStream.readUTF(), inputStream.readUTF(), userAgent);
                 categories.put(commandIndex, category);
             }
+            inputStream.close();
         }
     }
 

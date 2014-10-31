@@ -27,6 +27,7 @@ public class Main {
         System.out.println("Download " + category.getName() + " category");
         try {
             System.out.println("Count of wallpapers: " + category.getAllCount());
+            System.out.println("Already downloaded: " + category.getDownloadedCount());
 
             System.out.print("Download wallpapers? [Y/n] ");
             Scanner scanner = new Scanner(System.in);
