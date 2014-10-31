@@ -1,6 +1,8 @@
 package web.scrapper;
 
 import com.jaunt.JauntException;
+import com.jaunt.NodeNotFound;
+import com.jaunt.ResponseException;
 
 import java.io.*;
 import java.util.Map;
@@ -23,6 +25,21 @@ public class Main {
             return;
         }
         System.out.println("Download " + category.getName() + " category");
+        try {
+            System.out.println("Count of wallpapers: " + category.getAllCount());
+
+            System.out.print("Download wallpapers? [Y/n] ");
+            Scanner scanner = new Scanner(System.in);
+            String input = scanner.nextLine().trim();
+
+            if (input.equals("Y")) {
+                System.out.println("Start downloading " + category.getName());
+                scanner.nextLine();
+            }
+
+        } catch (ResponseException | NodeNotFound e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String[] args) {
@@ -48,7 +65,7 @@ public class Main {
                 }
             } while (!input.equals("q"));
 
-        } catch (IOException|ClassNotFoundException|JauntException e) {
+        } catch (IOException | ClassNotFoundException | JauntException e) {
             System.err.println(e.getMessage());
         }
     }

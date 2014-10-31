@@ -26,7 +26,8 @@ public class Downloader {
         for (Element element : elements) {
             categories.put(commandIndex++, new Category(
                     element.getText().trim(),
-                    element.getAttx("href")
+                    element.getAttx("href"),
+                    userAgent
             ));
         }
         return categories;
@@ -38,26 +39,28 @@ public class Downloader {
     }
 
     private void saveCategoriesList() throws IOException {
-        ObjectOutputStream outputStream = new ObjectOutputStream(
+        DataOutputStream outputStream = new DataOutputStream(
                 new FileOutputStream(categoriesFile));
         outputStream.writeInt(categories.size());
 
         for (Map.Entry<Integer, Category> entry : categories.entrySet()) {
-            outputStream.writeObject(entry.getKey());
-            outputStream.writeObject(entry.getValue());
+            outputStream.writeInt(entry.getKey());
+            Category category = entry.getValue();
+            outputStream.writeUTF(category.getName());
+            outputStream.writeUTF(category.getUrl());
         }
     }
 
     private void loadCategoriesList() throws IOException, ClassNotFoundException {
         File f = new File(categoriesFile);
         if (f.exists()) {
-            ObjectInputStream inputStream = new ObjectInputStream(
+            DataInputStream inputStream = new DataInputStream(
                     new FileInputStream(f));
             int count = inputStream.readInt();
             categories = new HashMap<>(count);
             for (int i = 0; i < count; i++) {
-                Integer commandIndex = (Integer) inputStream.readObject();
-                Category category = (Category) inputStream.readObject();
+                Integer commandIndex = inputStream.readInt();
+                Category category = new Category(inputStream.readUTF(), inputStream.readUTF(), userAgent);
                 categories.put(commandIndex, category);
             }
         }
