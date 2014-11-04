@@ -70,9 +70,9 @@ public class Category implements Serializable {
                             .findEvery("<li>");
                     for (Element elem : pictures) {
                         int imageId = Integer.parseInt(elem.findFirst("<div data-id>").getAt("data-id"));
-                        if (lastId < imageId) {
+//                        if (lastId < imageId) {
                             downloadImage(imageId);
-                        }
+//                        }
                     }
                     lastPage++;
                     writeStatus();
@@ -86,28 +86,50 @@ public class Category implements Serializable {
 
     private void downloadImage(int imageId)
             throws ResponseException, NotFound, IOException {
-        userAgent.visit("http://ikartinka.com/index.php?route=product/download/window&product_id=" +
-                imageId + "&size=1920x1200");
+        File imageFile = new File(name + File.separator + name + "_" + imageId + ".jpg");
+        if (imageFile.exists()) {
+            return;
+        }
+
+        boolean success = false;
+        while (!success) {
+            try {
+                userAgent.visit("http://ikartinka.com/index.php?route=product/download/window&product_id=" +
+                        imageId + "&size=1920x1200");
+                success = true;
+            } catch (ResponseException e) {
+                HttpResponse response = e.getResponse();
+                if(response != null) {
+                    System.err.println("Requested url: " + response.getRequestedUrlMsg());
+                    System.err.println("HTTP error code: " + response.getStatus());
+                    System.err.println("Error message: " + response.getMessage());
+                } else {
+                    System.out.println("Connection error, no response!");
+                }
+            }
+        }
+
+//        userAgent.visit("http://ikartinka.com/index.php?route=product/download/window&product_id=" +
+//                imageId + "&size=1920x1200");
         String imageSrc = userAgent.doc.findFirst("<div id=image>")
                 .getElement(0)
                 .getAt("src");
 
-        File imageFile = new File(name + File.separator + name + "_" + imageId + ".jpg");
-        if (!imageFile.exists()) {
-            userAgent.setHandler("image/jpeg", handlerForBinary);
-            userAgent.visit(imageSrc);
-            DataOutputStream outputStream = new DataOutputStream(new FileOutputStream(
-                    imageFile));
-            byte[] image = handlerForBinary.getContent();
-            outputStream.write(image);
-            outputStream.close();
+        if (imageSrc.equals("")) return;
 
-            lastId = imageId;
-            downloaded++;
-            writeStatus();
+        userAgent.setHandler("image/jpeg", handlerForBinary);
+        userAgent.visit(imageSrc);
+        DataOutputStream outputStream = new DataOutputStream(new FileOutputStream(
+                imageFile));
+        byte[] image = handlerForBinary.getContent();
+        outputStream.write(image);
+        outputStream.close();
 
-            System.out.println("Image " + imageId + " (" + image.length / 1024 + "Kb) downloaded");
-        }
+        lastId = imageId;
+        downloaded++;
+        writeStatus();
+
+        System.out.println("Image " + imageId + " (" + image.length / 1024 + "Kb) downloaded");
     }
 
 
