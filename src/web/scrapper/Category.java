@@ -16,6 +16,7 @@ public class Category implements Serializable {
     private String url;
     private int allCount;
     private int downloaded = 0;
+    private int viewed = 0;
     private int lastId = 0;
     private int lastPage = 1;
     private final int perPage = 50;
@@ -36,7 +37,7 @@ public class Category implements Serializable {
     }
 
     public int getAllCount() throws ResponseException, NotFound {
-        userAgent.visit(url);
+        visit(url);
         String results = userAgent.doc.findFirst("<div class=results>").getText();
 
         Pattern pattern = Pattern.compile("(\\d+)\\s\\(");
@@ -62,17 +63,18 @@ public class Category implements Serializable {
 
         int countOfPages = (int) Math.ceil((double) allCount / perPage);
 
-        if (allCount > downloaded) {
+        if (allCount > viewed) {
             try {
                 while (lastPage <= countOfPages) {
-                    userAgent.visit(url + "?sort=p.date_added&order=ASC&limit=" + perPage + "&page=" + lastPage);
+                    System.out.println("Page " + lastPage);
+                    visit(url + "?sort=p.date_added&order=ASC&limit=" + perPage + "&page=" + lastPage);
                     Elements pictures = userAgent.doc.findFirst("<ul class=normal>")
                             .findEvery("<li>");
                     for (Element elem : pictures) {
                         int imageId = Integer.parseInt(elem.findFirst("<div data-id>").getAt("data-id"));
-//                        if (lastId < imageId) {
-                            downloadImage(imageId);
-//                        }
+                        downloadImage(imageId);
+                        viewed++;
+                        writeStatus();
                     }
                     lastPage++;
                     writeStatus();
@@ -88,29 +90,15 @@ public class Category implements Serializable {
             throws ResponseException, NotFound, IOException {
         File imageFile = new File(name + File.separator + name + "_" + imageId + ".jpg");
         if (imageFile.exists()) {
+            lastId = imageId;
+            downloaded++;
+            writeStatus();
             return;
         }
 
-        boolean success = false;
-        while (!success) {
-            try {
-                userAgent.visit("http://ikartinka.com/index.php?route=product/download/window&product_id=" +
-                        imageId + "&size=1920x1200");
-                success = true;
-            } catch (ResponseException e) {
-                HttpResponse response = e.getResponse();
-                if(response != null) {
-                    System.err.println("Requested url: " + response.getRequestedUrlMsg());
-                    System.err.println("HTTP error code: " + response.getStatus());
-                    System.err.println("Error message: " + response.getMessage());
-                } else {
-                    System.out.println("Connection error, no response!");
-                }
-            }
-        }
+        visit("http://ikartinka.com/index.php?route=product/download/window&product_id=" +
+                imageId + "&size=1920x1200");
 
-//        userAgent.visit("http://ikartinka.com/index.php?route=product/download/window&product_id=" +
-//                imageId + "&size=1920x1200");
         String imageSrc = userAgent.doc.findFirst("<div id=image>")
                 .getElement(0)
                 .getAt("src");
@@ -118,7 +106,7 @@ public class Category implements Serializable {
         if (imageSrc.equals("")) return;
 
         userAgent.setHandler("image/jpeg", handlerForBinary);
-        userAgent.visit(imageSrc);
+        visit(imageSrc);
         DataOutputStream outputStream = new DataOutputStream(new FileOutputStream(
                 imageFile));
         byte[] image = handlerForBinary.getContent();
@@ -139,11 +127,31 @@ public class Category implements Serializable {
             DataOutputStream outputStream = new DataOutputStream(
                     new FileOutputStream(statusFile));
             outputStream.writeInt(downloaded);
+            outputStream.writeInt(viewed);
             outputStream.writeInt(lastId);
             outputStream.writeInt(lastPage);
             outputStream.close();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void visit(String url) {
+        boolean success = false;
+        while (!success) {
+            try {
+                userAgent.visit(url);
+                success = true;
+            } catch (ResponseException e) {
+                HttpResponse response = e.getResponse();
+                if(response != null) {
+                    System.err.println("Requested url: " + response.getRequestedUrlMsg());
+                    System.err.println("HTTP error code: " + response.getStatus());
+                    System.err.println("Error message: " + response.getMessage());
+                } else {
+                    System.out.println("Connection error, no response!");
+                }
+            }
         }
     }
 
@@ -154,6 +162,7 @@ public class Category implements Serializable {
                 DataInputStream inputStream = new DataInputStream(
                         new FileInputStream(statusFile));
                 downloaded = inputStream.readInt();
+                viewed = inputStream.readInt();
                 lastId = inputStream.readInt();
                 lastPage = inputStream.readInt();
                 inputStream.close();
@@ -166,5 +175,9 @@ public class Category implements Serializable {
 
     public int getDownloadedCount() {
         return downloaded;
+    }
+
+    public int getViewedCount() {
+        return viewed;
     }
 }
